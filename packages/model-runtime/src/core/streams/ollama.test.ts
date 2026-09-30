@@ -299,6 +299,26 @@ describe('OllamaStream', () => {
     });
   });
 
+  it('should not throw on chunks without message or content', async () => {
+    vi.spyOn(uuidModule, 'nanoid').mockReturnValueOnce('3');
+
+    const mockOllamaStream = new ReadableStream<ChatResponse>({
+      start(controller) {
+        controller.enqueue({ message: { role: 'assistant' }, done: false } as ChatResponse);
+        controller.enqueue({ done: false } as ChatResponse);
+        controller.enqueue({ done: true } as ChatResponse);
+        controller.close();
+      },
+    });
+
+    const output = await new Response(OllamaStream(mockOllamaStream)).text();
+
+    expect(output).toBe(
+      'id: chat_3\nevent: text\ndata: ""\n\n'.repeat(2) +
+        'id: chat_3\nevent: stop\ndata: "finished"\n\n',
+    );
+  });
+
   it('should handle empty stream', async () => {
     const mockOllamaStream = new ReadableStream<ChatResponse>({
       start(controller) {
