@@ -8,14 +8,10 @@ import { useImageStage } from '../context';
 import {
   buildDerivedFileMetadata,
   buildDerivedFileName,
+  DERIVED_FILE_SUFFIX,
   type DerivedImageOperation,
 } from '../geometry';
 import { ImagePixelsUnavailableError, loadReadableImage } from './exportImage';
-
-const SUFFIX: Record<DerivedImageOperation, string> = {
-  annotate: 'annotated',
-  resize: 'resized',
-};
 
 /**
  * Render an edit of the current image and upload it as a new file next to the
@@ -32,7 +28,7 @@ export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
       try {
         const img = await loadReadableImage(url);
         const blob = await render(img);
-        const fileName = buildDerivedFileName(name, SUFFIX[operation]);
+        const fileName = buildDerivedFileName(name, DERIVED_FILE_SUFFIX[operation]);
         const { refreshFileList, uploadWithProgress } = useFileStore.getState();
         const source = fileManagerSelectors.getFileByChunkTargetId(fileId)(useFileStore.getState());
 

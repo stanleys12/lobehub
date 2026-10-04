@@ -127,7 +127,14 @@ export const buildDerivedFileName = (name: string | undefined, suffix: string, e
   return `${base}-${suffix}.${ext}`;
 };
 
-export type DerivedImageOperation = 'annotate' | 'resize';
+export type DerivedImageOperation = 'annotate' | 'erase' | 'removeBackground' | 'resize';
+
+export const DERIVED_FILE_SUFFIX: Record<DerivedImageOperation, string> = {
+  annotate: 'annotated',
+  erase: 'erased',
+  removeBackground: 'no-bg',
+  resize: 'resized',
+};
 
 /** Lineage recorded on a derived file; the original is never overwritten. */
 export const buildDerivedFileMetadata = (

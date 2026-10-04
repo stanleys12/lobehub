@@ -1,8 +1,14 @@
 'use client';
 
 import { Badge, Button } from '@lobehub/ui/base-ui';
-import { CropIcon, MessageSquarePlusIcon, PencilLineIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+  CropIcon,
+  EraserIcon,
+  MessageSquarePlusIcon,
+  PencilLineIcon,
+  WandSparklesIcon,
+} from 'lucide-react';
+import { lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useImageStage } from '../context';
@@ -12,11 +18,15 @@ import { useFileComments } from './Comment/useFileComments';
 import ResizeMode from './Resize';
 import { toolStyles as styles } from './styles';
 
-type ToolMode = 'annotate' | 'comment' | 'resize';
+// AI editing pulls in the model and generation services; load it only when used.
+const AIEditMode = lazy(() => import('./AIEdit'));
+
+type ToolMode = 'annotate' | 'comment' | 'erase' | 'removeBackground' | 'resize';
 
 /**
  * Editing tools for a persisted image file: the floating bottom toolbar and
- * the annotate / comment / resize workflows it opens. Mounted by hosts that
+ * the annotate / comment / remove background / erase / resize workflows it
+ * opens. Mounted by hosts that
  * show a real library file; each workflow renders its own bar while active.
  */
 const ImageEditTools = () => {
@@ -34,6 +44,12 @@ const ImageEditTools = () => {
 
   if (mode === 'annotate') return <AnnotateMode onExit={exit} />;
   if (mode === 'comment') return <CommentMode onExit={exit} />;
+  if (mode === 'removeBackground' || mode === 'erase')
+    return (
+      <Suspense fallback={null}>
+        <AIEditMode key={mode} operation={mode} onExit={exit} />
+      </Suspense>
+    );
   if (mode === 'resize') return <ResizeMode onExit={exit} />;
 
   return (
@@ -69,6 +85,24 @@ const ImageEditTools = () => {
               style={{ marginInlineStart: 4 }}
             />
           )}
+        </Button>
+        <Button
+          icon={WandSparklesIcon}
+          shape={'round'}
+          size={'small'}
+          type={'text'}
+          onClick={() => enter('removeBackground')}
+        >
+          {t('imageViewer.tool.removeBackground')}
+        </Button>
+        <Button
+          icon={EraserIcon}
+          shape={'round'}
+          size={'small'}
+          type={'text'}
+          onClick={() => enter('erase')}
+        >
+          {t('imageViewer.tool.erase')}
         </Button>
         <Button
           icon={CropIcon}
