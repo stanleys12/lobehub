@@ -22,6 +22,7 @@ const prefixes = {
   evalRuns: 'run',
   evalTestCases: 'case',
   expertiseDomains: 'epd',
+  fileComments: 'fcm',
   files: 'file',
   generationBatches: 'gb',
   generationTopics: 'gt',

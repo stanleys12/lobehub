@@ -221,6 +221,7 @@ export const TRPC_NAMESPACE_API_KEY_RULES: Record<string, TrpcNamespaceScopeRule
   // whole-account backup dump (settings incl. market tokens, providers, agents)
   exporter: 'blocked',
   file: rw('file:read', 'file:write'),
+  fileComment: rw('file:read', 'file:write'),
   followUpAction: rw('chat:read', 'chat:write'),
   generation: { any: 'model:invoke' },
   generationBatch: { any: 'model:invoke' },

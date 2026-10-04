@@ -1892,6 +1892,23 @@ table knowledge_bases {
   }
 }
 
+table file_comments {
+  id text [pk, not null]
+  file_id text [not null]
+  user_id text [not null]
+  workspace_id text
+  anchor jsonb [not null]
+  content text [not null]
+  created_at "timestamp with time zone" [not null, default: `now()`]
+  updated_at "timestamp with time zone" [not null, default: `now()`]
+
+  indexes {
+    (file_id, created_at) [name: 'file_comments_file_id_created_at_idx']
+    user_id [name: 'file_comments_user_id_idx']
+    workspace_id [name: 'file_comments_workspace_id_idx']
+  }
+}
+
 table fts_search_sync_capture_version {
   id text [pk, not null]
   version integer [not null]

@@ -78,5 +78,6 @@ export interface FileItem {
   url: string;
 }
 
+export * from './comment';
 export * from './list';
 export * from './upload';

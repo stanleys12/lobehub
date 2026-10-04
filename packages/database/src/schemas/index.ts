@@ -29,6 +29,7 @@ export * from './environment';
 export * from './environmentInstance';
 export * from './expertise';
 export * from './file';
+export * from './fileComment';
 export * from './ftsSearchSyncOutbox';
 export * from './generation';
 export * from './goal';

@@ -57,6 +57,7 @@ import { documentLikeRouter } from './documentLike';
 import { expertiseRouter } from './expertise';
 import { exporterRouter } from './exporter';
 import { fileRouter } from './file';
+import { fileCommentRouter } from './fileComment';
 import { followUpActionRouter } from './followUpAction';
 import { generationRouter } from './generation';
 import { generationBatchRouter } from './generationBatch';
@@ -142,6 +143,7 @@ export const lambdaRouter = router({
   documentLike: documentLikeRouter,
   exporter: exporterRouter,
   file: fileRouter,
+  fileComment: fileCommentRouter,
   followUpAction: followUpActionRouter,
   generation: generationRouter,
   generationBatch: generationBatchRouter,
