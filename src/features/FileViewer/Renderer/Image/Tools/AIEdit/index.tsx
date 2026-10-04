@@ -328,10 +328,10 @@ const AIEditMode = ({ deps, onExit, operation }: AIEditModeProps) => {
                 disabled={!canSubmit}
                 shape={'round'}
                 size={'small'}
+                type={'primary'}
                 title={
                   isErase && strokes.length === 0 ? t('imageViewer.ai.erase.empty') : undefined
                 }
-                type={'primary'}
                 onClick={() => void submit()}
               >
                 {state.status === 'error'

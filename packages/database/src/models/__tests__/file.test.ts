@@ -1034,7 +1034,9 @@ describe('FileModel', () => {
         size: 100,
         url: 'files/photo.png',
       });
-      await serverDB.insert(knowledgeBaseFiles).values({ fileId: id, knowledgeBaseId: 'kb1', userId });
+      await serverDB
+        .insert(knowledgeBaseFiles)
+        .values({ fileId: id, knowledgeBaseId: 'kb1', userId });
 
       expect(await fileModel.findKnowledgeBaseIds(id)).toEqual(['kb1']);
     });

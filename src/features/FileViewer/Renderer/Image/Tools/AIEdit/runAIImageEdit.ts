@@ -36,11 +36,11 @@ interface GenerationStatusResult {
 
 /** Everything the edit talks to, injected so the flow is testable without a network. */
 export interface AIEditDeps {
+  /** File the result into the same library as the original. */
+  addToKnowledgeBase: (knowledgeBaseId: string, fileIds: string[]) => Promise<unknown>;
   createImage: (payload: ReturnType<typeof buildAIEditRequest>) => Promise<CreateImageResult>;
   createTopic: (title: string) => Promise<string>;
   deleteTopic: (id: string) => Promise<unknown>;
-  /** File the result into the same library as the original. */
-  addToKnowledgeBase: (knowledgeBaseId: string, fileIds: string[]) => Promise<unknown>;
   /** Read a file's location and metadata; never used to write. */
   getFile: (id: string) => Promise<
     | {
