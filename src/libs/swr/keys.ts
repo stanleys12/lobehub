@@ -1098,6 +1098,11 @@ export const fileKeys = {
 // header is `portal:` not `document:`.
 // =========================================================================
 
+// ---- file comments (image viewer pins) ----------------------------------
+export const fileCommentKeys = {
+  list: def('fileComment:list', (fileId: string) => ['fileComment:list', fileId]),
+};
+
 // ---- api key (settings/apikey) -------------------------------------------
 export const apiKeyKeys = {
   list: def('apiKey:list', () => ['apiKey:list']),
@@ -1598,6 +1603,7 @@ export const swrKeys = {
   expertise: expertiseKeys,
   favorite: favoriteKeys,
   file: fileKeys,
+  fileComment: fileCommentKeys,
   fork: forkKeys,
   gateway: gatewayKeys,
   goal: goalKeys,
