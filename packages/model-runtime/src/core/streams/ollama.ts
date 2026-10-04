@@ -10,11 +10,13 @@ import {
 } from './protocol';
 
 const transformOllamaStream = (chunk: ChatResponse, stack: StreamContext): StreamProtocolChunk => {
-  if (chunk.message.thinking) {
+  const content = chunk.message?.content ?? '';
+
+  if (chunk.message?.thinking) {
     return { data: chunk.message.thinking, id: stack.id, type: 'reasoning' };
   }
 
-  if (chunk.message.tool_calls && chunk.message.tool_calls.length > 0) {
+  if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
     return {
       data: chunk.message.tool_calls.map((value, index) => ({
         function: {
@@ -31,20 +33,20 @@ const transformOllamaStream = (chunk: ChatResponse, stack: StreamContext): Strea
   }
 
   // maybe need another structure to add support for multiple choices
-  if (chunk.done && !chunk.message.content) {
+  if (chunk.done && !content) {
     return { data: 'finished', id: stack.id, type: 'stop' };
   }
 
   // Check for <think> or </think> tags and update thinkingInContent state
-  if (chunk.message.content.includes('<think>')) {
+  if (content.includes('<think>')) {
     stack.thinkingInContent = true;
-  } else if (chunk.message.content.includes('</think>')) {
+  } else if (content.includes('</think>')) {
     stack.thinkingInContent = false;
   }
 
   // Remove <think> and </think> tags, and determine return type based on current thinking mode
   return {
-    data: chunk.message.content.replaceAll(/<\/?think>/g, ''),
+    data: content.replaceAll(/<\/?think>/g, ''),
     id: stack.id,
     type: stack?.thinkingInContent ? 'reasoning' : 'text',
   };

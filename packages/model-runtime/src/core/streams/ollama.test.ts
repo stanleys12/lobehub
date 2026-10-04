@@ -299,6 +299,46 @@ describe('OllamaStream', () => {
     });
   });
 
+  it('should handle chunks without message or content', async () => {
+    vi.spyOn(uuidModule, 'nanoid').mockReturnValueOnce('1');
+
+    const mockOllamaStream = new ReadableStream<ChatResponse>({
+      start(controller) {
+        controller.enqueue({ message: { thinking: 'Hmm' }, done: false } as ChatResponse);
+        controller.enqueue({ message: { thinking: '' }, done: false } as ChatResponse);
+        controller.enqueue({ done: false } as ChatResponse);
+        controller.enqueue({ message: { content: 'Hi' }, done: false } as ChatResponse);
+        controller.enqueue({ done: true } as ChatResponse);
+
+        controller.close();
+      },
+    });
+
+    const text = await new Response(OllamaStream(mockOllamaStream)).text();
+
+    expect(text).toBe(
+      [
+        'id: chat_1',
+        'event: reasoning',
+        'data: "Hmm"\n',
+        'id: chat_1',
+        'event: text',
+        'data: ""\n',
+        'id: chat_1',
+        'event: text',
+        'data: ""\n',
+        'id: chat_1',
+        'event: text',
+        'data: "Hi"\n',
+        'id: chat_1',
+        'event: stop',
+        'data: "finished"\n',
+      ]
+        .map((i) => `${i}\n`)
+        .join(''),
+    );
+  });
+
   it('should handle empty stream', async () => {
     const mockOllamaStream = new ReadableStream<ChatResponse>({
       start(controller) {
