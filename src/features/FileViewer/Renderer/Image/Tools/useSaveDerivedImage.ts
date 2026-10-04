@@ -11,11 +11,14 @@ import {
   DERIVED_FILE_SUFFIX,
   type DerivedImageOperation,
 } from '../geometry';
+import { aiEditDeps } from './AIEdit/deps';
 import { ImagePixelsUnavailableError, loadReadableImage } from './exportImage';
+import { saveDerivedFile } from './saveDerivedFile';
 
 /**
  * Render an edit of the current image and upload it as a new file next to the
- * original (same folder), recording lineage in metadata. The original is kept.
+ * original (same folder and libraries), recording lineage in metadata. The
+ * original is kept.
  */
 export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
   const { t } = useTranslation('file');
@@ -29,13 +32,14 @@ export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
         const img = await loadReadableImage(url);
         const blob = await render(img);
         const fileName = buildDerivedFileName(name, DERIVED_FILE_SUFFIX[operation]);
-        const { refreshFileList, uploadWithProgress } = useFileStore.getState();
+        const { refreshFileList } = useFileStore.getState();
         const source = fileManagerSelectors.getFileByChunkTargetId(fileId)(useFileStore.getState());
 
-        const result = await uploadWithProgress({
+        const result = await saveDerivedFile(aiEditDeps, {
           file: new File([blob], fileName, { type: blob.type || 'image/png' }),
-          fileMetadata: buildDerivedFileMetadata(fileId, operation),
-          parentId: source?.parentId ?? undefined,
+          metadata: buildDerivedFileMetadata(fileId, operation),
+          parentId: source?.parentId,
+          sourceId: fileId,
         });
         if (!result) return;
 

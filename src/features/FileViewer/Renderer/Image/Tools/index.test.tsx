@@ -29,6 +29,15 @@ vi.mock('@/store/file', () => ({
   useFileStore: { getState: () => fileStore },
 }));
 
+const location = vi.hoisted(() => ({
+  addToKnowledgeBase: vi.fn(),
+  getFile: vi.fn(),
+}));
+vi.mock('./AIEdit/deps', async (importOriginal) => {
+  const { aiEditDeps } = await importOriginal<{ aiEditDeps: object }>();
+  return { aiEditDeps: { ...aiEditDeps, ...location } };
+});
+
 const exporter = vi.hoisted(() => ({
   loadReadableImage: vi.fn(),
   renderImageToBlob: vi.fn(),
@@ -90,6 +99,8 @@ describe('ImageEditTools', () => {
     exporter.loadReadableImage.mockResolvedValue({ naturalHeight: 1000, naturalWidth: 2000 });
     exporter.renderImageToBlob.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
     fileStore.uploadWithProgress.mockResolvedValue({ id: 'file_new', url: 'files/new.png' });
+    location.addToKnowledgeBase.mockResolvedValue(undefined);
+    location.getFile.mockResolvedValue({ knowledgeBaseIds: ['kb_1'], parentId: 'docs_folder' });
   });
 
   afterEach(() => {
@@ -255,6 +266,9 @@ describe('ImageEditTools', () => {
         derivedFrom: { fileId: 'file_src', operation: 'annotate' },
       });
       expect(upload.parentId).toBe('docs_folder');
+      // Saved into the original's library too, so a library view lists it.
+      expect(location.getFile).toHaveBeenCalledWith('file_src');
+      expect(location.addToKnowledgeBase).toHaveBeenCalledWith('kb_1', ['file_new']);
       expect(toast.success).toHaveBeenCalled();
       // Back to the main toolbar after saving.
       expect(
