@@ -74,11 +74,13 @@ const styles = createStaticStyles(({ css }) => ({
   `,
 }));
 
+// Handles sit just inside the crop corners so they stay grabbable when the
+// crop reaches the image edge (the layer clips anything outside the image).
 const HANDLES: { cursor: string; handle: Exclude<CropHandle, 'move'>; x: string; y: string }[] = [
-  { cursor: 'nwse-resize', handle: 'nw', x: '-7px', y: '-7px' },
-  { cursor: 'nesw-resize', handle: 'ne', x: 'calc(100% - 7px)', y: '-7px' },
-  { cursor: 'nesw-resize', handle: 'sw', x: '-7px', y: 'calc(100% - 7px)' },
-  { cursor: 'nwse-resize', handle: 'se', x: 'calc(100% - 7px)', y: 'calc(100% - 7px)' },
+  { cursor: 'nwse-resize', handle: 'nw', x: '-1px', y: '-1px' },
+  { cursor: 'nesw-resize', handle: 'ne', x: 'calc(100% - 13px)', y: '-1px' },
+  { cursor: 'nesw-resize', handle: 'sw', x: '-1px', y: 'calc(100% - 13px)' },
+  { cursor: 'nwse-resize', handle: 'se', x: 'calc(100% - 13px)', y: 'calc(100% - 13px)' },
 ];
 
 interface ResizeModeProps {
@@ -202,9 +204,9 @@ const ResizeMode = ({ onExit }: ResizeModeProps) => {
       <div className={toolStyles.dock}>
         <div aria-label={t('imageViewer.tool.resize')} className={toolStyles.bar} role={'toolbar'}>
           <Select
-            aria-label={t('imageViewer.resize.aspectLabel')}
+            prefix={t('imageViewer.resize.aspectLabel')}
             size={'small'}
-            style={{ width: 120 }}
+            style={{ width: 150 }}
             value={preset}
             options={ASPECT_PRESETS.map((value) => ({
               label:

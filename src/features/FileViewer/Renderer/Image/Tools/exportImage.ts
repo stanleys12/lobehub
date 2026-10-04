@@ -9,10 +9,9 @@ export class ImagePixelsUnavailableError extends Error {
   }
 }
 
-const loadImage = (src: string, crossOrigin?: 'anonymous') =>
+const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    if (crossOrigin) img.crossOrigin = crossOrigin;
     img.decoding = 'async';
     img.addEventListener('load', () => resolve(img));
     img.addEventListener('error', () => reject(new Error(`Failed to load image: ${src}`)));
@@ -20,29 +19,30 @@ const loadImage = (src: string, crossOrigin?: 'anonymous') =>
   });
 
 /**
- * Load an image whose pixels a canvas may read. Storage URLs are cross-origin,
- * so the image is requested with CORS; if that request is refused, fetching the
- * bytes into a blob URL is the second attempt. Blob and data URLs are same-origin.
+ * Load an image whose pixels a canvas may read. Storage URLs are cross-origin
+ * and the viewer has usually displayed them already without CORS, so the HTTP
+ * cache may hold a response with no `Access-Control-Allow-Origin`; reading the
+ * bytes with `cache: 'no-store'` sidesteps that entry. Blob and data URLs are
+ * same-origin and load directly.
  */
 export const loadReadableImage = async (src: string): Promise<HTMLImageElement> => {
   if (src.startsWith('blob:') || src.startsWith('data:')) return loadImage(src);
 
+  let blob: Blob;
   try {
-    return await loadImage(src, 'anonymous');
+    const response = await fetch(src, { cache: 'no-store', credentials: 'omit', mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    blob = await response.blob();
   } catch (error) {
-    try {
-      const response = await fetch(src, { credentials: 'omit', mode: 'cors' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`, { cause: error });
-      const blobUrl = URL.createObjectURL(await response.blob());
-      try {
-        return await loadImage(blobUrl);
-      } finally {
-        // The decoded image keeps its pixels; the blob URL is no longer needed.
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 0);
-      }
-    } catch {
-      throw new ImagePixelsUnavailableError(error);
-    }
+    throw new ImagePixelsUnavailableError(error);
+  }
+
+  const blobUrl = URL.createObjectURL(blob);
+  try {
+    return await loadImage(blobUrl);
+  } finally {
+    // The decoded image keeps its pixels; the blob URL is no longer needed.
+    URL.revokeObjectURL(blobUrl);
   }
 };
 

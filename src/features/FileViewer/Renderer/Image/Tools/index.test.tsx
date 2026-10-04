@@ -185,6 +185,25 @@ describe('ImageEditTools', () => {
       await waitFor(() => expect(within(panel).queryByText('Nice sky')).not.toBeInTheDocument());
     });
 
+    it('starts with the list collapsed in a narrow host and toggles it from the bar', async () => {
+      const host = document.createElement('div');
+      host.dataset.testid = 'image-viewer';
+      Object.defineProperty(host, 'clientWidth', { value: 480 });
+      const overlay = document.createElement('div');
+      overlay.getBoundingClientRect = () => RECT as DOMRect;
+      host.append(overlay);
+      document.body.append(host);
+      renderTools({ overlayElement: overlay });
+
+      fireEvent.click(screen.getByText('imageViewer.tool.comment'));
+      expect(screen.queryByTestId('image-comment-panel')).not.toBeInTheDocument();
+
+      const toggle = screen.getByRole('button', { name: 'imageViewer.comment.title' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.click(toggle);
+      expect(await screen.findByTestId('image-comment-panel')).toBeInTheDocument();
+    });
+
     it('shows a load error with retry', async () => {
       service.list.mockRejectedValue(Object.assign(new Error('boom'), { status: 400 }));
       renderTools();
@@ -339,6 +358,17 @@ describe('ImageEditTools', () => {
 
       fireEvent.blur(width);
       expect(width).toHaveValue(800);
+    });
+
+    it('cancels with Escape even while a size field has focus', () => {
+      renderTools();
+      fireEvent.click(screen.getByText('imageViewer.tool.resize'));
+      const width = screen.getByLabelText('imageViewer.resize.width');
+      width.focus();
+      fireEvent.keyDown(width, { key: 'Escape' });
+
+      expect(screen.getByRole('toolbar', { name: 'imageViewer.editTools' })).toBeInTheDocument();
+      expect(fileStore.uploadWithProgress).not.toHaveBeenCalled();
     });
 
     it('cancels back to the toolbar without saving', () => {

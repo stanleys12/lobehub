@@ -3,7 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ImagePixelsUnavailableError, renderImageToBlob } from './exportImage';
+import { ImagePixelsUnavailableError, loadReadableImage, renderImageToBlob } from './exportImage';
 
 const createCtx = () => ({
   beginPath: vi.fn(),
@@ -88,5 +88,68 @@ describe('renderImageToBlob', () => {
     tainted = true;
 
     await expect(renderImageToBlob(source)).rejects.toBeInstanceOf(ImagePixelsUnavailableError);
+  });
+});
+
+describe('loadReadableImage', () => {
+  class FakeImage extends EventTarget {
+    decoding = '';
+    naturalHeight = 800;
+    naturalWidth = 1200;
+    set src(value: string) {
+      this.loaded = value;
+      queueMicrotask(() => this.dispatchEvent(new Event('load')));
+    }
+    loaded = '';
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('Image', FakeImage);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local/1');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  // Regression: the viewer shows the image without CORS first, so the HTTP
+  // cache holds a response without Access-Control-Allow-Origin. Reading the
+  // pixels must bypass that cached entry or every export fails.
+  it('reads storage bytes past the HTTP cache and decodes them from a blob URL', async () => {
+    const fetchMock = vi.fn(async () => new Response(new Blob(['png'], { type: 'image/png' })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const img = (await loadReadableImage('https://s3/a.png?sig=1')) as unknown as FakeImage;
+
+    expect(fetchMock).toHaveBeenCalledWith('https://s3/a.png?sig=1', {
+      cache: 'no-store',
+      credentials: 'omit',
+      mode: 'cors',
+    });
+    expect(img.loaded).toBe('blob:local/1');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:local/1');
+  });
+
+  it('reports unreadable pixels when storage refuses the CORS request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+
+    await expect(loadReadableImage('https://s3/a.png')).rejects.toBeInstanceOf(
+      ImagePixelsUnavailableError,
+    );
+  });
+
+  it('loads blob URLs directly', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await loadReadableImage('blob:local/upload');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

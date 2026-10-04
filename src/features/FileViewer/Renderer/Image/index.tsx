@@ -23,7 +23,8 @@ import {
 } from './geometry';
 import TopBar from './TopBar';
 
-const STAGE_PADDING = 16;
+/** Room kept around the fitted image so the floating bars do not cover it. */
+const STAGE_PADDING = { block: 56, inline: 16 };
 
 const styles = createStaticStyles(({ css }) => ({
   frame: css`
@@ -167,8 +168,8 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
     const fit = fitSize(
       naturalSize,
       {
-        height: Math.max(0, container.height - STAGE_PADDING * 2),
-        width: Math.max(0, container.width - STAGE_PADDING * 2),
+        height: Math.max(0, container.height - STAGE_PADDING.block * 2),
+        width: Math.max(0, container.width - STAGE_PADDING.inline * 2),
       },
       rotation,
     );

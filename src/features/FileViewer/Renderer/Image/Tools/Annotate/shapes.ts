@@ -22,6 +22,15 @@ export type AnnotationShape = BrushShape | RectShape;
 
 export const ANNOTATION_COLORS = ['#ff3b30', '#ffcc00', '#34c759', '#0a84ff', '#ffffff'] as const;
 
+/** Spoken names for the swatches, keyed by color (locale key suffix). */
+export const ANNOTATION_COLOR_NAMES: Record<(typeof ANNOTATION_COLORS)[number], string> = {
+  '#0a84ff': 'blue',
+  '#34c759': 'green',
+  '#ff3b30': 'red',
+  '#ffcc00': 'yellow',
+  '#ffffff': 'white',
+};
+
 export const ANNOTATION_SIZES = {
   large: 0.012,
   medium: 0.006,

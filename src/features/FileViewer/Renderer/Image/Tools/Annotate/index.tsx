@@ -14,6 +14,7 @@ import { toolStyles as styles } from '../styles';
 import { useSaveDerivedImage } from '../useSaveDerivedImage';
 import { useToolKeys } from '../useToolKeys';
 import {
+  ANNOTATION_COLOR_NAMES,
   ANNOTATION_COLORS,
   ANNOTATION_SIZES,
   type AnnotationShape,
@@ -168,7 +169,7 @@ const AnnotateMode = ({ onExit }: AnnotateModeProps) => {
           >
             {ANNOTATION_COLORS.map((value) => (
               <button
-                aria-label={value}
+                aria-label={t(`imageViewer.annotate.colorName.${ANNOTATION_COLOR_NAMES[value]}`)}
                 aria-pressed={color === value}
                 className={styles.swatch}
                 key={value}

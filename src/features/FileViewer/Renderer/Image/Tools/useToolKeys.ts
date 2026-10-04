@@ -12,7 +12,8 @@ const isTypingTarget = (target: EventTarget | null) =>
 
 /**
  * Keyboard shortcuts for an active tool mode: Esc cancels, Enter completes,
- * ⌘/Ctrl+Z undoes. Ignored while the user is typing into a field.
+ * ⌘/Ctrl+Z undoes. Ignored while the user is typing into a field, except Esc
+ * from a single-line input.
  */
 export const useToolKeys = (handlers: ToolKeyHandlers) => {
   const ref = useRef(handlers);
@@ -22,8 +23,12 @@ export const useToolKeys = (handlers: ToolKeyHandlers) => {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isTypingTarget(event.target)) return;
+      if (event.defaultPrevented) return;
       const { onEnter, onEscape, onUndo } = ref.current;
+      // Esc still cancels from a single-line field (the size inputs); multi-line
+      // editors such as the comment draft handle Esc themselves.
+      const escapeFromInput = event.key === 'Escape' && event.target instanceof HTMLInputElement;
+      if (isTypingTarget(event.target) && !escapeFromInput) return;
 
       if (event.key === 'Escape' && onEscape) {
         event.preventDefault();

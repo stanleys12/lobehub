@@ -100,6 +100,27 @@ export const clientToImagePoint = (
   };
 };
 
+/**
+ * Where a normalized image point lands within the rotated image's on-screen
+ * box (also 0–1). Used to keep popovers on the side of a point that has room.
+ */
+export const imagePointToScreenFraction = (point: Point, rotation: Rotation = 0): Point => {
+  switch (rotation) {
+    case 90: {
+      return { x: 1 - point.y, y: point.x };
+    }
+    case 180: {
+      return { x: 1 - point.x, y: 1 - point.y };
+    }
+    case 270: {
+      return { x: point.y, y: 1 - point.x };
+    }
+    default: {
+      return point;
+    }
+  }
+};
+
 /** `photo.jpeg` + `annotated` → `photo-annotated.png` */
 export const buildDerivedFileName = (name: string | undefined, suffix: string, ext = 'png') => {
   const base = (name || 'image').replace(/\.[^./\\]+$/, '') || 'image';

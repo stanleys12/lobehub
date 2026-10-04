@@ -6,6 +6,7 @@ import {
   clampZoom,
   clientToImagePoint,
   fitSize,
+  imagePointToScreenFraction,
   MAX_ZOOM,
   MIN_ZOOM,
   nextRotation,
@@ -107,5 +108,22 @@ describe('derived file helpers', () => {
     expect(buildDerivedFileMetadata('file_1', 'resize')).toEqual({
       derivedFrom: { fileId: 'file_1', operation: 'resize' },
     });
+  });
+});
+
+describe('imagePointToScreenFraction', () => {
+  it('follows the image corner around each quarter turn', () => {
+    const topLeft = { x: 0, y: 0 };
+    expect(imagePointToScreenFraction(topLeft, 0)).toEqual({ x: 0, y: 0 });
+    expect(imagePointToScreenFraction(topLeft, 90)).toEqual({ x: 1, y: 0 });
+    expect(imagePointToScreenFraction(topLeft, 180)).toEqual({ x: 1, y: 1 });
+    expect(imagePointToScreenFraction(topLeft, 270)).toEqual({ x: 0, y: 1 });
+  });
+
+  it('puts a lower-left image point near the top after a 90° turn', () => {
+    // The sea's top-left corner sits low in the image but near the top on screen.
+    const screen = imagePointToScreenFraction({ x: 0.07, y: 0.75 }, 90);
+    expect(screen.x).toBeCloseTo(0.25);
+    expect(screen.y).toBeCloseTo(0.07);
   });
 });

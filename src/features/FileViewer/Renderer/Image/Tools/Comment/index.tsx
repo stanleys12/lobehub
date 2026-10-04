@@ -5,13 +5,14 @@ import { FILE_COMMENT_MAX_LENGTH } from '@lobechat/types';
 import { ActionIcon, Button, Spin, Text, TextArea, toast } from '@lobehub/ui/base-ui';
 import { createStaticStyles, cssVar } from 'antd-style';
 import dayjs from 'dayjs';
-import { Trash2Icon } from 'lucide-react';
+import { ListIcon, Trash2Icon } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import { useImageStage } from '../../context';
+import { imagePointToScreenFraction } from '../../geometry';
 import { toolStyles } from '../styles';
 import { useToolKeys } from '../useToolKeys';
 import { useFileComments } from './useFileComments';
@@ -68,9 +69,9 @@ const styles = createStaticStyles(({ css }) => ({
 
     font-size: 11px;
     font-weight: 600;
-    color: ${cssVar.colorTextLightSolid};
+    color: #fff;
 
-    background: ${cssVar.colorPrimary};
+    background: ${cssVar.colorInfo};
     box-shadow: ${cssVar.boxShadowSecondary};
 
     &[data-active='true'] {
@@ -94,9 +95,9 @@ const styles = createStaticStyles(({ css }) => ({
 
     font-size: 11px;
     font-weight: 600;
-    color: ${cssVar.colorTextLightSolid};
+    color: #fff;
 
-    background: ${cssVar.colorPrimary};
+    background: ${cssVar.colorInfo};
   `,
 }));
 
@@ -125,6 +126,11 @@ const CommentMode = ({ onExit }: CommentModeProps) => {
   const [draftAnchor, setDraftAnchor] = useState<FileCommentAnchor | null>(null);
   const [draftText, setDraftText] = useState('');
   const [activeId, setActiveId] = useState<string>();
+  // In a narrow host (the resource detail dock) the list would cover the
+  // image, so it starts collapsed there and opens from the bottom bar.
+  const [listOpen, setListOpen] = useState(
+    () => (overlayElement?.closest('[data-testid="image-viewer"]')?.clientWidth ?? 1024) >= 640,
+  );
 
   const cancelDraft = () => {
     setDraftAnchor(null);
@@ -162,6 +168,10 @@ const CommentMode = ({ onExit }: CommentModeProps) => {
     setActiveId(undefined);
     setDraftAnchor(point);
   };
+
+  // Which way the draft card opens depends on where the point is on screen,
+  // not in the image, once the image is turned.
+  const draftScreen = draftAnchor ? imagePointToScreenFraction(draftAnchor, rotation) : undefined;
 
   // Pins and the draft card sit inside the rotated frame; turning them back
   // keeps their labels upright.
@@ -217,7 +227,7 @@ const CommentMode = ({ onExit }: CommentModeProps) => {
                   style={{
                     left: `${draftAnchor.x * 100}%`,
                     top: `${draftAnchor.y * 100}%`,
-                    transform: `rotate(${-rotation}deg) translate(${draftAnchor.x > 0.6 ? 'calc(-100% - 8px)' : '16px'}, ${draftAnchor.y > 0.6 ? '-100%' : '0'})`,
+                    transform: `rotate(${-rotation}deg) translate(${draftScreen && draftScreen.x > 0.6 ? 'calc(-100% - 8px)' : '16px'}, ${draftScreen && draftScreen.y > 0.6 ? '-100%' : '0'})`,
                     transformOrigin: '0 0',
                   }}
                   onClick={(event) => event.stopPropagation()}
@@ -265,88 +275,98 @@ const CommentMode = ({ onExit }: CommentModeProps) => {
           overlayElement,
         )}
 
-      <aside
-        aria-label={t('imageViewer.comment.title')}
-        className={toolStyles.panel}
-        data-testid={'image-comment-panel'}
-      >
-        <div
-          style={{
-            borderBottom: `1px solid ${cssVar.colorSplit}`,
-            fontWeight: 500,
-            padding: '10px 12px',
-          }}
+      {listOpen && (
+        <aside
+          aria-label={t('imageViewer.comment.title')}
+          className={toolStyles.panel}
+          data-testid={'image-comment-panel'}
         >
-          {t('imageViewer.comment.title')}
-          {comments.length > 0 && (
-            <Text style={{ marginInlineStart: 6 }} type={'secondary'}>
-              {comments.length}
-            </Text>
-          )}
-        </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: 4 }}>
-          {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-              <Spin />
-            </div>
-          ) : error ? (
-            <div
-              style={{
-                alignItems: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                padding: 16,
-              }}
-            >
-              <Text type={'secondary'}>{t('imageViewer.comment.loadFailed')}</Text>
-              <Button size={'small'} onClick={() => void reload()}>
-                {t('imageViewer.retry')}
-              </Button>
-            </div>
-          ) : comments.length === 0 ? (
-            <Text style={{ display: 'block', padding: 12 }} type={'secondary'}>
-              {t('imageViewer.comment.empty')}
-            </Text>
-          ) : (
-            <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {comments.map((comment, index) => (
-                <li
-                  className={styles.item}
-                  data-active={activeId === comment.id}
-                  key={comment.id}
-                  onClick={() => setActiveId(comment.id)}
-                >
-                  <span className={styles.pinBadge}>{index + 1}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {comment.content}
+          <div
+            style={{
+              alignItems: 'center',
+              borderBottom: `1px solid ${cssVar.colorSplit}`,
+              display: 'flex',
+              fontWeight: 500,
+              gap: 6,
+              padding: '10px 12px',
+            }}
+          >
+            <span>{t('imageViewer.comment.title')}</span>
+            {comments.length > 0 && <Text type={'secondary'}>{comments.length}</Text>}
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: 4 }}>
+            {isLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                <Spin />
+              </div>
+            ) : error ? (
+              <div
+                style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  padding: 16,
+                }}
+              >
+                <Text type={'secondary'}>{t('imageViewer.comment.loadFailed')}</Text>
+                <Button size={'small'} onClick={() => void reload()}>
+                  {t('imageViewer.retry')}
+                </Button>
+              </div>
+            ) : comments.length === 0 ? (
+              <Text style={{ display: 'block', padding: 12 }} type={'secondary'}>
+                {t('imageViewer.comment.empty')}
+              </Text>
+            ) : (
+              <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {comments.map((comment, index) => (
+                  <li
+                    className={styles.item}
+                    data-active={activeId === comment.id}
+                    key={comment.id}
+                    onClick={() => setActiveId(comment.id)}
+                  >
+                    <span className={styles.pinBadge}>{index + 1}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {comment.content}
+                      </div>
+                      <Text style={{ fontSize: 12 }} type={'secondary'}>
+                        {dayjs(comment.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </Text>
                     </div>
-                    <Text style={{ fontSize: 12 }} type={'secondary'}>
-                      {dayjs(comment.createdAt).format('YYYY-MM-DD HH:mm')}
-                    </Text>
-                  </div>
-                  <ActionIcon
-                    aria-label={t('imageViewer.comment.delete')}
-                    icon={Trash2Icon}
-                    loading={deletingIds.includes(comment.id)}
-                    size={'small'}
-                    title={t('imageViewer.comment.delete')}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleDelete(comment.id);
-                    }}
-                  />
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      </aside>
+                    <ActionIcon
+                      aria-label={t('imageViewer.comment.delete')}
+                      icon={Trash2Icon}
+                      loading={deletingIds.includes(comment.id)}
+                      size={'small'}
+                      title={t('imageViewer.comment.delete')}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleDelete(comment.id);
+                      }}
+                    />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </aside>
+      )}
 
       <div className={toolStyles.dock}>
         <div aria-label={t('imageViewer.tool.comment')} className={toolStyles.bar} role={'toolbar'}>
           <span className={toolStyles.hint}>{t('imageViewer.comment.hint')}</span>
+          <ActionIcon
+            active={listOpen}
+            aria-expanded={listOpen}
+            aria-label={t('imageViewer.comment.title')}
+            icon={ListIcon}
+            size={'small'}
+            title={t('imageViewer.comment.title')}
+            onClick={() => setListOpen((value) => !value)}
+          />
           <Button shape={'round'} size={'small'} type={'primary'} onClick={onExit}>
             {t('imageViewer.done')}
           </Button>

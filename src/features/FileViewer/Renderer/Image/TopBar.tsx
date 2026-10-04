@@ -113,7 +113,7 @@ const TopBar = ({
           onClick={onRotate}
         />
       </div>
-      <div className={styles.group} role={'toolbar'}>
+      <div aria-label={t('imageViewer.fileActions')} className={styles.group} role={'toolbar'}>
         <ActionIcon
           aria-label={t('imageViewer.download')}
           icon={DownloadIcon}
