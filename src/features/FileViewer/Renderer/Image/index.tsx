@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 import { downloadFile } from '@/utils/client/downloadFile';
 
-import { ImageStageContext, type ImageStageValue } from './context';
+import { ImageStageContext, type ImageStageValue, type ImageVersion } from './context';
 import {
   clampZoom,
   clientToImagePoint,
@@ -22,6 +22,7 @@ import {
   zoomOut,
 } from './geometry';
 import TopBar from './TopBar';
+import VersionSwitcher from './VersionSwitcher';
 
 /** Room kept around the fitted image so the floating bars do not cover it. */
 const STAGE_PADDING = { block: 56, inline: 16 };
@@ -86,7 +87,13 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) => {
+const ImageViewer = ({
+  fileId: sourceId,
+  name: sourceName,
+  onClose,
+  tools,
+  url: sourceUrl,
+}: ImageViewerProps) => {
   const { t } = useTranslation('file');
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -101,6 +108,40 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
   const [rotation, setRotation] = useState<Rotation>(0);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Edits saved in this session, keyed by the original so a new file starts clean.
+  const [versionState, setVersionState] = useState<{
+    activeId?: string;
+    sourceId: string;
+    versions: ImageVersion[];
+  }>({ sourceId, versions: [] });
+  const { activeId, versions } =
+    versionState.sourceId === sourceId ? versionState : { activeId: undefined, versions: [] };
+  const active = versions.find((version) => version.fileId === activeId);
+  const fileId = active?.fileId ?? sourceId;
+  const name = active?.name ?? sourceName;
+  const url = active?.url ?? sourceUrl;
+
+  const selectVersion = (id?: string) => {
+    if (id === active?.fileId) return;
+    setStatus('loading');
+    setVersionState({ activeId: id, sourceId, versions });
+  };
+
+  const addVersion = useCallback(
+    (version: ImageVersion) => {
+      setVersionState((state) => {
+        const current = state.sourceId === sourceId ? state : { sourceId, versions: [] };
+        return {
+          activeId: version.fileId,
+          sourceId,
+          versions: [...current.versions.filter((v) => v.fileId !== version.fileId), version],
+        };
+      });
+      setStatus('loading');
+    },
+    [sourceId],
+  );
 
   // Track the stage size so "fit" follows panel resizes and full screen.
   useEffect(() => {
@@ -188,6 +229,7 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
     () =>
       url
         ? {
+            addVersion,
             fileId,
             fitToScreen,
             name,
@@ -199,7 +241,18 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
             zoom,
           }
         : null,
-    [fileId, fitToScreen, name, naturalSize, overlayElement, rotation, toImagePoint, url, zoom],
+    [
+      addVersion,
+      fileId,
+      fitToScreen,
+      name,
+      naturalSize,
+      overlayElement,
+      rotation,
+      toImagePoint,
+      url,
+      zoom,
+    ],
   );
 
   if (!url || !stageValue) return null;
@@ -280,7 +333,7 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
               alt={name || 'image'}
               className={styles.image}
               draggable={false}
-              key={attempt}
+              key={`${url}:${attempt}`}
               src={url}
               onError={() => setStatus('error')}
               onLoad={(event) => {
@@ -333,6 +386,10 @@ const ImageViewer = ({ fileId, name, onClose, tools, url }: ImageViewerProps) =>
           onZoomIn={() => applyZoom(zoomIn(zoom))}
           onZoomOut={() => applyZoom(zoomOut(zoom))}
         />
+
+        {versions.length > 0 && (
+          <VersionSwitcher activeId={active?.fileId} versions={versions} onSelect={selectVersion} />
+        )}
 
         {status === 'loaded' && tools}
       </div>

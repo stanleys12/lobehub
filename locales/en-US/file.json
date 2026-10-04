@@ -117,6 +117,8 @@
   "imageViewer.tool.erase": "Erase",
   "imageViewer.tool.removeBackground": "Remove background",
   "imageViewer.tool.resize": "Resize",
+  "imageViewer.version.label": "Versions",
+  "imageViewer.version.original": "Original",
   "imageViewer.zoom": "Zoom",
   "imageViewer.zoomIn": "Zoom in",
   "imageViewer.zoomOut": "Zoom out",

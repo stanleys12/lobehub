@@ -174,6 +174,8 @@ export default {
   'imageViewer.saveFailed': 'Failed to save the image',
   'imageViewer.saved': 'Saved as {{name}}',
   'imageViewer.saving': 'Saving…',
+  'imageViewer.version.label': 'Versions',
+  'imageViewer.version.original': 'Original',
   'imageViewer.zoom': 'Zoom',
   'imageViewer.zoomIn': 'Zoom in',
   'imageViewer.zoomOut': 'Zoom out',

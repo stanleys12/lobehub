@@ -29,7 +29,7 @@ export type AIEditState =
  */
 export const useAIImageEdit = (operation: AIEditOperation, deps: AIEditDeps = aiEditDeps) => {
   const { t } = useTranslation('file');
-  const { fileId, name, url } = useImageStage();
+  const { addVersion, fileId, name, url } = useImageStage();
   const [state, setState] = useState<AIEditState>({ status: 'idle' });
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -80,6 +80,7 @@ export const useAIImageEdit = (operation: AIEditOperation, deps: AIEditDeps = ai
         setState({ status: 'idle' });
         void useFileStore.getState().refreshFileList({ revalidateResources: true });
         toast.success(t('imageViewer.saved', { name: result.name }));
+        addVersion({ fileId: result.fileId, name: result.name, operation, url: result.url });
         return result;
       } catch (error) {
         const edit =
@@ -95,7 +96,7 @@ export const useAIImageEdit = (operation: AIEditOperation, deps: AIEditDeps = ai
         if (controllerRef.current === controller) controllerRef.current = null;
       }
     },
-    [deps, fileId, name, operation, t, url],
+    [addVersion, deps, fileId, name, operation, t, url],
   );
 
   const cancel = useCallback(() => controllerRef.current?.abort(), []);

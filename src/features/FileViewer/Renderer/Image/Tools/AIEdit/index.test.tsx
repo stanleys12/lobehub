@@ -55,11 +55,14 @@ const EDIT_MODEL = {
 
 const RECT = { bottom: 100, height: 100, left: 0, right: 200, top: 0, width: 200, x: 0, y: 0 };
 
+const addVersion = vi.fn();
+
 const renderMode = (operation: 'erase' | 'removeBackground', deps = createMockDeps()) => {
   const overlay = document.createElement('div');
   overlay.getBoundingClientRect = () => RECT as DOMRect;
   document.body.append(overlay);
   const value: ImageStageValue = {
+    addVersion,
     fileId: 'file_src',
     fitToScreen: vi.fn(),
     name: 'scene.png',
@@ -126,6 +129,13 @@ describe('AIEditMode — remove background', () => {
     );
     expect(toast.success).toHaveBeenCalledWith('imageViewer.saved');
     expect(fileStore.refreshFileList).toHaveBeenCalled();
+    // The result goes on stage as a version next to the original.
+    expect(addVersion).toHaveBeenCalledWith({
+      fileId: 'file_KWGzzbWzaunM',
+      name: 'scene-no-bg.png',
+      operation: 'removeBackground',
+      url: 'https://app.lobehub.com/f/file_KWGzzbWzaunM',
+    });
   });
 
   it('shows the failure inline with retry, and keeps the tool open', async () => {
@@ -140,6 +150,7 @@ describe('AIEditMode — remove background', () => {
     expect(screen.getByRole('button', { name: 'imageViewer.close' })).toBeInTheDocument();
     expect(onExit).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+    expect(addVersion).not.toHaveBeenCalled();
   });
 
   it('cancels a running edit and discards it', async () => {

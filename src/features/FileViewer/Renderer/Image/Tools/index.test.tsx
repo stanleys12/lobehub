@@ -73,7 +73,9 @@ const renderTools = (stage: Partial<ImageStageValue> = {}) => {
   overlay.getBoundingClientRect = () => RECT as DOMRect;
   document.body.append(overlay);
   const fitToScreen = vi.fn();
+  const addVersion = vi.fn();
   const value: ImageStageValue = {
+    addVersion,
     fileId: 'file_src',
     fitToScreen,
     name: 'sunset.jpg',
@@ -90,7 +92,7 @@ const renderTools = (stage: Partial<ImageStageValue> = {}) => {
       <ImageStageContext value={value}>{children}</ImageStageContext>
     </SWRConfig>
   );
-  return { fitToScreen, overlay, ...render(<ImageEditTools />, { wrapper }) };
+  return { addVersion, fitToScreen, overlay, ...render(<ImageEditTools />, { wrapper }) };
 };
 
 describe('ImageEditTools', () => {
@@ -226,7 +228,7 @@ describe('ImageEditTools', () => {
 
   describe('annotate', () => {
     it('draws a box and saves the annotated image as a new file', async () => {
-      const { fitToScreen, overlay } = renderTools();
+      const { addVersion, fitToScreen, overlay } = renderTools();
       fireEvent.click(screen.getByText('imageViewer.tool.annotate'));
       expect(fitToScreen).toHaveBeenCalled();
 
@@ -270,6 +272,14 @@ describe('ImageEditTools', () => {
       expect(location.getFile).toHaveBeenCalledWith('file_src');
       expect(location.addToKnowledgeBase).toHaveBeenCalledWith('kb_1', ['file_new']);
       expect(toast.success).toHaveBeenCalled();
+      // The saved image goes on stage as a version next to the original.
+      expect(addVersion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileId: 'file_new',
+          name: 'sunset-annotated.png',
+          operation: 'annotate',
+        }),
+      );
       // Back to the main toolbar after saving.
       expect(
         await screen.findByRole('toolbar', { name: 'imageViewer.editTools' }),

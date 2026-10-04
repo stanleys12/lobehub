@@ -18,6 +18,24 @@ const loadImage = (width = 2000, height = 1000) => {
   return img;
 };
 
+const AddVersionProbe = () => {
+  const { addVersion } = useImageStage();
+  return (
+    <button
+      onClick={() =>
+        addVersion({
+          fileId: 'file_nobg',
+          name: 'sunset-no-bg.png',
+          operation: 'removeBackground',
+          url: 'https://s3/sunset-no-bg.png',
+        })
+      }
+    >
+      add-version
+    </button>
+  );
+};
+
 const StageProbe = () => {
   const stage = useImageStage();
   return (
@@ -93,6 +111,61 @@ describe('ImageViewer', () => {
 
     fireEvent.click(screen.getByText('imageViewer.retry'));
     expect(screen.queryByText('imageViewer.loadFailed')).not.toBeInTheDocument();
+  });
+
+  it('shows a saved edit on stage and switches back to the original', () => {
+    render(
+      <ImageViewer
+        fileId={'file_1'}
+        name={'sunset.png'}
+        url={'https://s3/sunset.png'}
+        tools={
+          <>
+            <AddVersionProbe />
+            <StageProbe />
+          </>
+        }
+      />,
+    );
+    loadImage(640, 480);
+    expect(screen.queryByRole('toolbar', { name: 'imageViewer.version.label' })).toBeNull();
+
+    fireEvent.click(screen.getByText('add-version'));
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://s3/sunset-no-bg.png');
+    loadImage(640, 480);
+    // Tools now act on the edit, so a follow-up edit chains from it.
+    expect(screen.getByTestId('probe')).toHaveTextContent('file_nobg:640x480:1');
+
+    const original = screen.getByRole('button', { name: 'imageViewer.version.original' });
+    const edit = screen.getByRole('button', { name: 'imageViewer.tool.removeBackground' });
+    expect(edit).toHaveAttribute('aria-pressed', 'true');
+    expect(edit).toHaveAttribute('title', 'sunset-no-bg.png');
+
+    fireEvent.click(original);
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://s3/sunset.png');
+    loadImage(640, 480);
+    expect(screen.getByTestId('probe')).toHaveTextContent('file_1:640x480:1');
+    expect(original).toHaveAttribute('aria-pressed', 'true');
+
+    // Download follows the version on stage.
+    fireEvent.click(edit);
+    fireEvent.click(screen.getByRole('button', { name: 'imageViewer.download' }));
+    expect(downloadFile).toHaveBeenCalledWith('https://s3/sunset-no-bg.png', 'sunset-no-bg.png');
+  });
+
+  it('drops saved versions when another file opens', () => {
+    const { rerender } = render(
+      <ImageViewer fileId={'file_1'} tools={<AddVersionProbe />} url={'https://s3/a.png'} />,
+    );
+    loadImage();
+    fireEvent.click(screen.getByText('add-version'));
+    expect(screen.getByRole('toolbar', { name: 'imageViewer.version.label' })).toBeInTheDocument();
+
+    rerender(
+      <ImageViewer fileId={'file_2'} tools={<AddVersionProbe />} url={'https://s3/b.png'} />,
+    );
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://s3/b.png');
+    expect(screen.queryByRole('toolbar', { name: 'imageViewer.version.label' })).toBeNull();
   });
 
   it('renders nothing without a url', () => {

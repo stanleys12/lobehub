@@ -22,7 +22,7 @@ import { saveDerivedFile } from './saveDerivedFile';
  */
 export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
   const { t } = useTranslation('file');
-  const { fileId, name, url } = useImageStage();
+  const { addVersion, fileId, name, url } = useImageStage();
   const [saving, setSaving] = useState(false);
 
   const save = useCallback(
@@ -45,6 +45,7 @@ export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
 
         void refreshFileList({ revalidateResources: true });
         toast.success(t('imageViewer.saved', { name: fileName }));
+        addVersion({ fileId: result.id, name: fileName, operation, url: result.url });
         return { ...result, name: fileName };
       } catch (error) {
         console.error('[ImageViewer] save derived image failed', error);
@@ -57,7 +58,7 @@ export const useSaveDerivedImage = (operation: DerivedImageOperation) => {
         setSaving(false);
       }
     },
-    [fileId, name, operation, t, url],
+    [addVersion, fileId, name, operation, t, url],
   );
 
   return { save, saving };
